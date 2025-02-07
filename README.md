@@ -1,4 +1,4 @@
-# htn-phenotyping-with-llms
+# Learning Computational Phenotypes for Treatment Resistant Hypertension with Large Language Models
 
 Generating hypertension computable phenotypes with LLMs
 

@@ -1,4 +1,4 @@
-# Learning Computational Phenotypes for Treatment Resistant Hypertension with Large Language Models
+# Iterative Learning of Computable Phenotypes for Treatment Resistant Hypertension using Large Language Models
 
 Generating hypertension computable phenotypes with LLMs
 

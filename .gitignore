@@ -9,6 +9,7 @@ __pycache__/
 # Results folders
 data/*
 results*/
+paper/*
 
 # C extensions
 *.so

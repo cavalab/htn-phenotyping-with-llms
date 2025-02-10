@@ -1,5 +1,4 @@
 # Import packages
-from glob import glob
 import pandas as pd
 import seaborn as sns
 
@@ -11,13 +10,11 @@ matplotlib.rc("pdf", fonttype=42)
 matplotlib.rc("ps", fonttype=42)
 
 
-pd.set_option("display.max_colwidth", None)
+# pd.set_option("display.max_colwidth", None)
 sns.set_style("ticks", {"legend.frameon": True})  # style='whitegrid', palette='magma'
 sns.set_context("paper", font_scale=1.25, rc={"lines.linewidth": 1.1})
 
-# results_path = "../results_llms"
-# results_path = "../results_llms_e3"
-results_path = "../results_llms_25-02-06_2"
+results_path = "../results_paper"
 
 if not os.path.exists("../paper"):
     os.makedirs("../paper")
@@ -117,35 +114,54 @@ marker_choice = {
 }
 
 # Use models generated with or without scaled data
-scaled_data = False
 
 results = []
-for target in targets:
-    for model in models:
-        for fold in folds:
-            for few_feature in [True, False]:
-                for prompt_richness in [True, False]:
-                    for file in glob(
-                        f"{results_path}/{target}/{model}/*_{fold}_{scaled_data}_{few_feature}_{prompt_richness}.json"
-                    ):
-                        # skipping llm results --> they dont have the ALL fold
-                        df = pd.read_json(file, typ="series")
+# for tk, tv in targets.items():
+#     for model in models:
+#         for fold in folds:
+#             for scaled_data in [False]:
+#                 for icd_only in [True, False]:
+#                     for prompt_richness in [True, False]:
+#                         for file in glob(
+#                             f"{results_path}/{tk}/{model}/"
+#                             f"{tv}_{model}_{scaled_data}_{icd_only}_{prompt_richness}*.json"
+#                         ):
+#                             # skipping llm results --> they dont have the ALL fold
+#                             df = pd.read_json(file, typ="series")
 
-                        indxs = df.index
-                        # indxs = [indx for indx in indxs if indx not in ['pred', 'pred_proba']]
+#                             indxs = df.index
+#                             # indxs = [indx for indx in indxs if indx not in ['pred', 'pred_proba']]
 
-                        results.append(df[indxs])
+#                             results.append(df[indxs])
 
-results_df = pd.DataFrame(data=results, columns=indxs)
+# from tqdm import tqdm
 
-# Beautifying it
-results_df["model"] = results_df["model"].apply(lambda m: nice_model_labels[m])
-results_df["target"] = results_df["target"].apply(lambda t: dnames_to_nice[t])
 
-results_df = results_df[results_df["model"].isin(order)]
+# def load_results(constraints=dict(scale=[False])):
+#     for file in tqdm(glob(f"{results_path}/**/*.json", recursive=True)):
+#         df = pd.read_json(file, typ="series")
+#         stay = True
+#         for kc, vc in constraints.items():
+#             if df[kc] not in vc:
+#                 stay = False
+#                 print("skipping", file)
+#                 break
+#         if not stay:
+#             continue
 
-print(results_df["model"].unique())
-print(results_df["target"].unique())
+#         indxs = df.index
+#         # indxs = [indx for indx in indxs if indx not in ['pred', 'pred_proba']]
 
-# Getting some free samples
-results_df.sample(3)
+#         results.append(df[indxs])
+
+#     results_df = pd.DataFrame(data=results, columns=indxs)
+
+#     # Beautifying it
+#     results_df["model"] = results_df["model"].apply(lambda m: nice_model_labels[m])
+#     results_df["target"] = results_df["target"].apply(lambda t: dnames_to_nice[t])
+
+#     results_df = results_df[results_df["model"].isin(order)]
+
+#     print(results_df["model"].unique())
+#     print(results_df["target"].unique())
+#     return results_df

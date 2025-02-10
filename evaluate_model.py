@@ -92,7 +92,7 @@ def read_data(
     # Removing targets
     drop_cols = ["UNI_ID"] + list(targets.keys())
 
-    print("targets:", targets)
+    # print("targets:", targets)
     # setup target
 
     target_new = targets[target]
@@ -120,11 +120,11 @@ def read_data(
     df_X = df_train.drop(drop_cols, axis=1)
     feature_names = df_X.columns
 
-    print("feature names:", feature_names)
+    # print("feature names:", feature_names)
 
     # label encode
-    print("X train info:")
-    df_X.info()
+    # print("X train info:")
+    # df_X.info()
 
     assert not df_X.isna().any().any()
 
@@ -156,11 +156,12 @@ def read_data(
     df_X = df_test.drop(drop_cols, axis=1)
 
     feature_names = df_X.columns
-    print("feature names:", feature_names)
+    # print("feature names:", feature_names)
     # label encode
 
-    print("X test info:")
-    df_X.info()
+    # print("X test info:")
+    # df_X.info()
+    
     assert not df_X.isna().any().any()
 
     X_test = df_X

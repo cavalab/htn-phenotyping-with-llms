@@ -4,7 +4,7 @@ import os
 import traceback
 import importlib
 from dotenv import load_dotenv, find_dotenv
-
+import uuid
 import ast
 
 import numpy as np
@@ -14,7 +14,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted
 from sklearn.metrics import balanced_accuracy_score
 
-from openai import OpenAI
+import openai
 
 from .openai_cfg import cfg, default_cp_function
 
@@ -41,8 +41,10 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
         temperature=cfg["temperature"],
         top_p=cfg["top_p"],
         filename=None,
-        max_iterations=5,
-        max_stall_count=2,
+        max_iterations=10,
+        max_stall_count=3,
+        random_state=None,
+        max_tokens=cfg["max_tokens"],
     ):
         self.model = model
         self.temperature = temperature
@@ -51,6 +53,8 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
         self.filename = filename
         self.max_iterations = max_iterations
         self.max_stall_count = max_stall_count
+        self.random_state = random_state
+        self.max_tokens = max_tokens
 
     def set_prompt(self, target="", richness=False):
         # after finishing implementing, try to use different models
@@ -94,7 +98,7 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
         X_variable_dict = {c: htn_variable_dict[c] for c in X.columns}
 
         # Asking for pred_proba
-        func_return = "floats representing the probability"
+        func_return = cfg["func_return"]
         # func_return = 'booleans representing the classification'
 
         self.messages_ = cfg["init_messages"](
@@ -106,32 +110,48 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
         stall_count = 0
         best_cp = None
         auprcs = []
+        cps = []
         improvement = None
         if (self.filename is not None) and (not os.path.exists(self.filename)):
             for i in range(self.max_iterations):
-                client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
                 # generates text competion
-                completion = client.chat.completions.create(
+                api_request = dict(
                     messages=self.messages_,
                     model=self.model,
-                    max_tokens=1024,
+                    max_tokens=self.max_tokens,
                     temperature=self.temperature,
                     top_p=self.top_p,
+                    seed=self.random_state,
                 )
+                try:
+                    completion = client.chat.completions.create(**api_request)
+                except openai.BadRequestError:
+                    print(traceback.format_exc())
+                    break
+                except openai.RateLimitError:
+                    print(traceback.format_exc())
+                    import time
 
-                cp = completion.choices[0].message.content
+                    time.sleep(np.random.randint(low=1, high=5))
+                    completion = client.chat.completions.create(**api_request)
+                    pass
+
+                response = completion.choices[0].message.content
+                cp = response
                 if cp.startswith("```python"):
                     cp = cp.split("```python")[1][:-3]
 
                 print("iteration", i, "best_auprc:", best_auprc)
 
                 print(cp)
+                cps.append(cp)
 
                 self.messages_.append(
                     {
                         "role": "assistant",
-                        "content": cp,
+                        "content": response,
                     }
                 )
 
@@ -145,10 +165,11 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
                 if best_auprc < 0:
                     best_auprc = auprc
                     best_cp = cp
-                if auprc > best_auprc:
+                elif auprc > best_auprc:
+                    print("AURPC improved from", best_auprc, "to", auprc)
                     best_auprc = auprc
-                    improvement = True
                     best_cp = cp
+                    improvement = True
                 else:
                     stall_count += 1
                     improvement = False
@@ -191,16 +212,28 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
         # self._find_threshold(X, y)
 
         print("auprcs:", auprcs)
+        print("cps:")
+        for cpi in cps:
+            print(40 * "#")
+            print(cpi)
 
         return self
 
     def evaluate_and_instruct(self, cp, X, y_true, improvement):
         """Evaluate a computable phenotype and return an instruction message"""
-        target = self.phenotype.split(",")[0]
         # try to predict; if it fails, capture error message and append
         try:
             cp_function = self.get_cp_function(cp)
+
             y_pred = self.predict_proba(X, cp_function=cp_function)[:, 1]
+
+            # get overall performance
+            y_true = y_true.astype(bool)
+            auroc = roc_auc_score(y_true, y_pred)
+            auprc = average_precision_score(y_true, y_pred)
+            auroc = round(auroc, 3)
+            auprc = round(auprc, 3)
+            tn, fp, fn, tp = confusion_matrix(y_true, y_pred > self.threshold_).ravel()
         except Exception:
             # make custom message with error traceback
             message = "\n".join(
@@ -214,31 +247,48 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
             return message, 0.5, 0
 
         # subset features to those in cp
-        # subset only in case of large feature set?
+        n_features = min(10, X.shape[1])
         subset_features = [c for c in X.columns if c in cp]
+        if len(subset_features) < n_features:
+            n_add = n_features - len(subset_features)
+            for i in range(n_add):
+                candidates = [c for c in X.columns if c not in subset_features]
+                subset_features.append(np.random.choice(candidates))
+        elif len(subset_features) > n_features:
+            subset_features = list(
+                np.random.choice(subset_features, size=n_features, replace=False)
+            )
         Xs = X[subset_features]
-        # import ipdb
-        # ipdb.set_trace()
-        y_true = y_true.astype(bool)
-        # get overall performance
-        auroc = roc_auc_score(y_true, y_pred)
-        auprc = average_precision_score(y_true, y_pred)
-        tn, fp, fn, tp = confusion_matrix(y_true, y_pred > self.threshold_).ravel()
-        # get worst cases
-        # TODO: give random or close call cases instead of worst performance
+
+        # get example cases
 
         use_fp_example = np.max(y_pred[~y_true]) > self.threshold_
         if use_fp_example:
-            # idx_worst_FP = np.argmax(y_pred[~y_true]) # np.random.choice
-            idxs_worst_FP = np.random.randint(0, len(Xs.loc[~y_true]), size=3)
-            X_max_fp = Xs.loc[~y_true].iloc[idxs_worst_FP]
-            y_max_fp = y_pred[~y_true][idxs_worst_FP]
+            fp_mask = (y_pred > self.threshold_) & (~y_true)
+            # idx_worst_FP = np.argmax(y_pred[fp_mask])  # np.random.choice
+            # idx_rand_FP = np.random.randint(low=0, high=len(y_pred[fp_mask]))
+            # idx_best_FP = np.argmin(y_pred[fp_mask])  # np.random.choice
+
+            X_fps = Xs.loc[fp_mask]
+            X_fps["True Label"] = 0
+            X_fps["Predicted Probability"] = y_pred[fp_mask]
+            X_fps = X_fps.reset_index()
+            X_fps.index.name = "Patient"
+            if len(X_fps) > 10:
+                X_fps = X_fps.sample(10, replace=False)
+            X_fps = X_fps[["True Label", "Predicted Probability"] + subset_features]
 
         use_fn_example = np.max(1 - y_pred[y_true]) > self.threshold_
         if use_fn_example:
-            idx_worst_FN = np.argmax(1 - y_pred[y_true])
-            X_min_fn = Xs.loc[y_true].iloc[idx_worst_FN]
-            y_min_fn = y_pred[y_true][idx_worst_FN]
+            fn_mask = (y_pred <= self.threshold_) & (y_true)
+            X_fns = Xs.loc[fn_mask]
+            X_fns["True Label"] = 1
+            X_fns["Predicted Probability"] = y_pred[fn_mask]
+            X_fns = X_fns.reset_index()
+            X_fns.index.name = "Patient"
+            if len(X_fns) > 10:
+                X_fns = X_fns.sample(10, replace=False)
+            X_fns = X_fns[["True Label", "Predicted Probability"] + subset_features]
 
         if improvement:
             improve_msg = "Good News! The updated Python function you created outerperformed the previous version. Let's keep those improvements coming."
@@ -258,44 +308,33 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
                 "\n# Overall Performance\n",
                 f"Area Under the Receiver-Operating Curve (AUROC): {auroc:.3f}",
                 f"Area under the precision-recall curve (AUPRC): {auprc:.3f}",
-                # f"True Negatives: {tn} ({tn / n_neg * 100:.1f}%)",
                 f"The False Positive Rate is {fp / n_neg * 100:.1f}%",
                 f"The False Negative Rate is {fn / n_pos * 100:.1f}%",
-                # f"False Negatives: {fn} ({fn / n_pos * 100:.1f}%)",
-                # f"True Positives: {tp} ({tp / n_pos * 100:.1f}%)",
                 "",
                 "",
             ]
         )
         if use_fp_example:
             message += (
-                f"# False Positives\n"
-                f"Please refine the function so that some of the {fp} False Positives have lower predicted probabilities.\n"
+                f"# Analysis of False Positives\n\n"
+                f"Please refine the function so that the {fp} False Positives have lower predicted probabilities.\n\n"
+                f"Below you will find {len(X_fps)} example patients with false positive assessments to assist you in prescribing changes to the predict_hypertension function:\n"
             )
-            X_max_fp["Correct Label"] = 0
-            X_max_fp["Predicted Probability"] = y_max_fp
-            message += "\n".join(
-                [
-                    f"Here is a table of {len(X_max_fp)} examples of false positives.",
-                    f"{X_max_fp[['Correct Label', 'Predicted Probability'] + subset_features].reset_index().T.to_markdown()}",
-                    "\n",
-                ]
-            )
+            message += f"\n{X_fps.to_json(orient='records', lines=True)}\n"
+
         if use_fn_example:
-            message += f"Please refine the function to so that some of the {fn} False Negatives have higher predicted probabilities.\n"
-            X_min_fn["Correct Label"] = 0
-            X_min_fn["Predicted Probability"] = y_min_fn
-            message += "\n".join(
-                [
-                    f"Here is a table of {len(X_min_fn)} examples of false negatives.",
-                    f"{X_min_fn[['Correct Label', 'Predicted Probability'] + subset_features].reset_index().T.to_markdown()}",
-                    "\n",
-                ]
+            message += (
+                f"# Analysis of False Negatives\n\n"
+                f"Please refine the function so that the {fn} False Negatives have higher predicted probabilities.\n\n"
+                f"Below you will find {len(X_fns)} example patients with false negative assessments to assist you in prescribing changes to the predict_hypertension function:\n"
             )
+            message += f"\n{X_fns.to_json(orient='records', lines=True)}\n"
+
         message += "\n".join(
             [
-                "Please create an updated Python function named `predict_hypertension` that achieves fewer false positives and fewer false negatives than the one you previously provided."
-                "Where possible, rather than adding additional logic and calculations, try to reuse and refine the existing logic in the previous function."
+                "# Summary of Request\n",
+                "Please create an updated Python function named `predict_hypertension` that achieves fewer false positives and fewer false negatives than the one you previously provided. "
+                # "Where possible, rather than adding additional logic and calculations, try to reuse and refine the existing logic in the previous function."
                 f"The function should assess whether each patient (represented as rows) has evidence of {self.phenotype}. "
                 f"As before, the function takes a pandas DataFrame named `df` as input. "
                 f"Recall that the available columns and their meanings are provided as key value pairs in a dictionary previously provided. "
@@ -303,7 +342,6 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
                 "As before, your response must contain only a Python function, with no comments or explanations, that strictly follows the given description. ",
             ]
         )
-
         return message, auroc, auprc
 
     def get_cp_function_from_file(self, filename=None):
@@ -319,7 +357,7 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
         return cp_module.predict_hypertension
 
     def get_cp_function(self, str_rep):
-        filename = self.filename.replace(".py", "[tmp].py")
+        filename = self.filename.replace(".py", f"{uuid.uuid4()}.py")
         with open(filename, "w") as file:
             file.write(str_rep)
         return self.get_cp_function_from_file(filename)
@@ -338,7 +376,7 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
             else:
                 prob = self.cp_function_(X)
         except Exception:
-            prob = np.zeros(size=len(X))
+            prob = np.zeros(len(X))
 
         prob = np.hstack(
             (np.ones(X.shape[0]).reshape(-1, 1), np.array(prob).reshape(-1, 1))

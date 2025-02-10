@@ -37,12 +37,14 @@ class OpenAI_HTN_Classifier(ClassifierMixin, BaseEstimator):
         temperature=cfg["temperature"],
         top_p=cfg["top_p"],
         filename=None,
+        random_state=None,
     ):
         self.model = model
         self.temperature = temperature
         self.top_p = top_p
         self.phenotype = phenotype
         self.filename = filename
+        self.random_state = random_state
 
     def set_prompt(self, target="", richness=False):
         # after finishing implementing, try to use different models
@@ -96,8 +98,7 @@ class OpenAI_HTN_Classifier(ClassifierMixin, BaseEstimator):
         X_variable_dict = {c: htn_variable_dict[c] for c in X.columns}
 
         # Asking for pred_proba
-        func_return = "floats representing the probability"
-        # func_return = 'booleans representing the classification'
+        func_return = cfg["func_return"]
 
         messages = cfg["init_messages"](self.phenotype, func_return, X_variable_dict)
 
@@ -109,9 +110,10 @@ class OpenAI_HTN_Classifier(ClassifierMixin, BaseEstimator):
             completion = client.chat.completions.create(
                 messages=messages,
                 model=self.model,
-                max_tokens=1024,
+                max_tokens=cfg["max_tokens"],
                 temperature=self.temperature,
                 top_p=self.top_p,
+                seed=self.random_state,
             )
 
             cp = completion.choices[0].message.content
@@ -161,8 +163,9 @@ class OpenAI_HTN_Classifier(ClassifierMixin, BaseEstimator):
 
         try:
             prob = self.cp_function_(X)
+            assert len(prob) == len(X)
         except Exception:
-            prob = np.zeros(size=len(X))
+            prob = np.zeros(len(X))
 
         prob = np.hstack(
             (np.ones(X.shape[0]).reshape(-1, 1), np.array(prob).reshape(-1, 1))

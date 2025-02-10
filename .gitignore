@@ -6,6 +6,10 @@ __pycache__/
 # api keys
 .env
 
+# Results folders
+data/*
+results*/
+
 # C extensions
 *.so
 

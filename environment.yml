@@ -2,33 +2,15 @@ name: htn-cp-llm
 channels:
     - conda-forge
 dependencies:
-    - python<3.13.0a0 # =3.8.2
-    - cmake #=3.18.*
-    - eigen #=3.4.*
-    - fmt
-    - gcc >= 12.0
-    - gxx >= 12.0
-    - ninja
-    - ceres-solver=2.1.0
-    - taskflow
-    - pybind11>=2.6.2 #=2.6.2
-    - pytest #=6.2.4
-    - pydot
+    - python=3.12.0
     - scikit-learn
-    - pandas
-    # these are not required for install
-    - jupyter
-    - ipython
-    - pip
     - joblib
     - wheel
-    - nlohmann_json
-    - pybind11_json
-    - sphinx
-    - graphviz # install in the environment as well, not just the python
     - scipy<1.12.0
+    - pip
     - pip:
       - graphviz
+      - pandas
       - deap
       - pmlb
       - matplotlib
@@ -38,4 +20,4 @@ dependencies:
       - openai
       - statannot
       - git+https://github.com/cavalab/feat.git
-      
+      - fire

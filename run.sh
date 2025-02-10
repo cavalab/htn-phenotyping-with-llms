@@ -2,6 +2,9 @@
 # source activate base
 # conda activate htn-cp-llm
 
+queue="" # your slurm queue name, if applicable. to run locally --- instead of using slurm --- just use the --local flag
+rdir="results_llms"
+
 # Switch the `if false` clausules to run the experiments
 
 # Running the LLM experiment ---------------------------------------------------
@@ -17,13 +20,14 @@ if false; then
     python submit_jobs.py \
         -n_trials 10 \
         -n_jobs 1 \
-        -folds A \
+        -folds A,B,C,D,E \
         -models "GPT_4o_mini_Classifier,GPT_4o_Classifier,GPT_35_Classifier" \
         -data-dir $(pwd)/data/ \
-        -results_dir results \
+        -results_dir $rdir \
         -few_features [True,False] \
         -prompt_richnesses [True,False] \
-        -time "1:00" 
+        -time "1:00" \
+        -queue $queue 
 fi;
 
 if false; then
@@ -35,10 +39,11 @@ if false; then
         -folds A,B,C,D,E \
         -models "GPT_4o_mini_iterative_Classifier,GPT_4o_iterative_Classifier,GPT_35_iterative_Classifier" \
         -data-dir $(pwd)/data/ \
-        -results_dir results \
+        -results_dir $rdir \
         -few_features [True,False] \
         -prompt_richnesses [True,False] \
-        -time "1:00" 
+        -time "1:00" \
+        -queue $queue 
 fi;
 
 models=()
@@ -48,7 +53,7 @@ models+=("FeatBoolean")
 
 # # Other ML models
 # out of official experiments: GaussianNaiveBayes,LogisticRegression_L2
-models+=("DecisionTree,LogisticRegression_L1,,RandomForest")
+models+=("DecisionTree,LogisticRegression_L1,RandomForest")
 
 if false; then
     for model in "${models[@]}"
@@ -65,9 +70,9 @@ if false; then
 
         # To load previous models for the LLMs, we need to use the same results folder.
 
-        # local
+        # to run locally --- instead of using slurm --- just use the --local flag
         python submit_jobs.py -models "$model" -n_trials 5 -n_jobs 20 \
-            -data-dir $(pwd)/data/ -results results \
+            -data-dir $(pwd)/data/ -results $rdir \
             -folds A,B,C,D,E --prompt-richness --local
         
         # slurm (use n_jobs=1 in this case)

@@ -184,6 +184,7 @@ def read_data(
             "high_BP_during_htn_meds_2",
             "high_BP_during_htn_meds_3",
             "high_BP_during_htn_meds_4_plus",
+            "sum_enc_during_htn_meds_4_plus",
             "low_K_N",
             "test_K_N",
             "Med_Potassium_N",

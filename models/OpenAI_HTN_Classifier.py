@@ -58,7 +58,7 @@ class OpenAI_HTN_Classifier(ClassifierMixin, BaseEstimator):
         elif target in ["res_htn_dx_ia", "res_HTN_heuristic"]:
             if richness:
                 # self.phenotype = 'treatment resistant hypertension, defined as a high blood pressure measurements while prescribed 3 or more hypertension medications or requiring prescription of 4 or more hypertentsion medications'
-                self.phenotype = "treatment resistant hypertension, which we will define as 2 or more high blood pressure measurements while prescribed 3 or more hypertension medications"
+                self.phenotype = "treatment resistant hypertension, which we will define as 2 or more high blood pressure measurements while prescribed 3 hypertension medications or 2 or more encounters while prescribed 4 or more hypertension medications"
             else:
                 self.phenotype = "treatment resistant hypertension"
         elif target in ["htn_hypok_dx_ia", "hypoK_heuristic_v4"]:

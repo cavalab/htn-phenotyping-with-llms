@@ -84,6 +84,7 @@ def run(
     time="01:00",
     max_jobs=3500,
     queue="",
+    repeats=[1],
 ):
     n_trials = len(seeds) if n_trials < 1 else n_trials
 
@@ -124,37 +125,33 @@ def run(
     jobs_w_results = []
     queued_jobs = []
 
-    for target, ml, few_feature, prompt_richness, seed, fold, scale in it.product(
-        targets, models, few_features, prompt_richnesses, seeds, folds, scale_datas
+    for target, ml, few_feature, prompt_richness, seed, fold, scale, repeat in it.product(
+        targets,
+        models,
+        few_features,
+        prompt_richnesses,
+        seeds,
+        folds,
+        scale_datas,
+        repeats
     ):
         filepath = "/".join([results_dir, target, ml]) + "/"
         if not os.path.exists(filepath):
             print("WARNING: creating path", filepath)
             os.makedirs(filepath)
         random_state = str(seed)
-        save_file = ""
-        if script == "evaluate_model":
-            save_file = filepath + "_".join(
-                [
-                    targets[target],
-                    ml,
-                    random_state,
-                    str(fold),
-                    str(scale),
-                    str(few_feature),
-                    str(prompt_richness),
-                ]
-            )
-        else:
-            save_file = filepath + "_".join(
-                [
-                    targets[target],
-                    ml,
-                    random_state,
-                    str(scale),
-                    str(prompt_richness),
-                ]
-            )
+        save_file = filepath + "_".join(
+            [
+                targets[target],
+                ml,
+                str(scale),
+                str(few_feature),
+                str(prompt_richness),
+                str(repeat),
+                str(fold),
+                random_state,
+            ]
+        )
         print(save_file)
         # check if there is already a result for this experiment
         if os.path.exists(save_file + ".json"):
@@ -176,12 +173,14 @@ def run(
             f" {'--scale_data' if scale else ''}"
             f" {'--icd-only' if few_feature else ''}"
             f" {'--prompt-richness' if prompt_richness else ''}"
+            f" -repeat {repeat}"
         )
         job_info.append(
             {
                 "ml": ml,
                 "target": target,
                 "fold": fold,
+                "repeat": str(repeat),
                 "scale": str(scale),
                 "few_feature": str(few_feature),
                 "prompt_richness": str(prompt_richness),
@@ -208,30 +207,18 @@ def run(
     else:
         # sbatch
         for i, run_cmd in enumerate(all_commands):
-            job_name = None
-            if script == "evaluate_model":
-                job_name = "_".join(
-                    [
-                        job_info[i]["target"],
-                        job_info[i]["ml"],
-                        job_info[i]["seed"],
-                        job_info[i]["fold"],
-                        job_info[i]["scale"],
-                        job_info[i]["few_feature"],
-                        job_info[i]["prompt_richness"],
-                    ]
-                )
-            else:
-                job_name = "_".join(
-                    [
-                        job_info[i]["target"],
-                        job_info[i]["ml"],
-                        job_info[i]["seed"],
-                        job_info[i]["scale"],
-                        job_info[i]["few_feature"],
-                        job_info[i]["prompt_richness"],
-                    ]
-                )
+            job_name = "_".join(
+                [
+                    job_info[i]["target"],
+                    job_info[i]["ml"],
+                    job_info[i]["scale"],
+                    job_info[i]["few_feature"],
+                    job_info[i]["prompt_richness"],
+                    job_info[i]["repeat"],
+                    job_info[i]["fold"],
+                    job_info[i]["seed"],
+                ]
+            )
 
             out_file = job_info[i]["results_path"] + job_name + ".%J.out"
 

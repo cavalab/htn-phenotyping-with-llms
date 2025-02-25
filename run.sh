@@ -2,15 +2,15 @@
 # source activate base
 # conda activate htn-cp-llm
 
-queue="" # your slurm queue name, if applicable. to run locally --- instead of using slurm --- just use the --local flag
-rdir="results_llms"
+queue="bch-compute" # your slurm queue name, if applicable. to run locally --- instead of using slurm --- just use the --local flag
+rdir="results_paper_rebuttal"
 
 # Switch the `if false` clausules to run the experiments
 
 # Running the LLM experiment ---------------------------------------------------
 # Run these first. Then, when running the comparison with other methods (next experiment),
 # just specify the models and it will load them from this execution.
-if false; then
+if true; then
     # GPT_4_turbo_Classifier,GPT_o3_mini_Classifier
     # Dont run it with several jobs --- they will share the solution between different folders
     # (as openAI models doesnt rely on data, so folds or scaling doesnt affect the generated model).
@@ -30,7 +30,7 @@ if false; then
         -queue $queue 
 fi;
 
-if false; then
+if true; then
     # This one can actually run in parallel, as they dont share  solutions
     # for the iter versions the folds are important, they depend on the data
     python submit_jobs.py \

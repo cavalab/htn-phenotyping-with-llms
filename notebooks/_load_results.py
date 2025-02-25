@@ -10,19 +10,19 @@ matplotlib.rc("pdf", fonttype=42)
 matplotlib.rc("ps", fonttype=42)
 
 
-pd.set_option("display.max_colwidth", None)
+# pd.set_option("display.max_colwidth", None)
 sns.set(style="ticks", palette="colorblind")  # style='whitegrid', palette='magma'
 sns.set_context("paper", font_scale=1.25, rc={"lines.linewidth": 1.1})
 
-results_path_not_llms = "./results_not-llms"
-# results_path_llms = "../results_llms_25-02-07"
-results_path_llms = "./results_paper"
+results_path_not_llms = "../results_not-llms"
+results_path_llms = "../results_paper_rebuttal"
+paper_dir = "../paper_rebuttal"
 
-if not os.path.exists("../paper"):
-    os.makedirs("../paper")
+if not os.path.exists(paper_dir):
+    os.makedirs(paper_dir)
 
-if not os.path.exists("../paper/final_models"):
-    os.makedirs("../paper/final_models")
+if not os.path.exists(f"{paper_dir}/final_models"):
+    os.makedirs(f"{paper_dir}/final_models")
 
 targets = {
     "htn_dx_ia": "Htndx",

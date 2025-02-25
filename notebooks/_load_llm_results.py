@@ -14,13 +14,14 @@ matplotlib.rc("ps", fonttype=42)
 sns.set_style("ticks", {"legend.frameon": True})  # style='whitegrid', palette='magma'
 sns.set_context("paper", font_scale=1.25, rc={"lines.linewidth": 1.1})
 
-results_path = "../results_paper"
+results_path = "../results_paper_rebuttal"
+paper_dir = "../paper_rebuttal"
 
-if not os.path.exists("../paper"):
-    os.makedirs("../paper")
+if not os.path.exists(paper_dir):
+    os.makedirs(paper_dir)
 
-if not os.path.exists("../paper/final_models"):
-    os.makedirs("../paper/final_models")
+if not os.path.exists(f"{paper_dir}/final_models"):
+    os.makedirs(f"{paper_dir}/final_models")
 
 targets = {
     "htn_dx_ia": "Htndx",
@@ -103,8 +104,8 @@ order = [
 ]
 
 marker_choice = {
-    "gpt-35-turbo": "v",
-    "gpt-35-turbo-iter": ".",
+    "gpt-3.5-turbo": "v",
+    "gpt-3.5-turbo-iter": ".",
     "gpt-4-turbo": "^",
     "gpt-4-turbo-iter": "X",
     "gpt-4o": "o",

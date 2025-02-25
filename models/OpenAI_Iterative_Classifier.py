@@ -57,32 +57,7 @@ class OpenAI_Iterative_Classifier(ClassifierMixin, BaseEstimator):
         self.max_tokens = max_tokens
 
     def set_prompt(self, target="", richness=False):
-        # after finishing implementing, try to use different models
-        # mean --> of all visits. explain that in the description. try with all variables (appendix of the paper have their descriptions).
-        if target in ["htn_dx_ia", "HTN_heuristic"]:
-            if richness:
-                # self.phenotype = 'hypertension, otherwise known as high blood pressure, which can be intuited based on high blood pressure measurements, number of encounters with high blood pressure measurements, hypertension Dx codes, and/or counts in clinical notes'
-                self.phenotype = "hypertension, which we will define as 2 or more hypertension Dx codes"
-            else:
-                self.phenotype = "hypertension"
-        elif target in ["res_htn_dx_ia", "res_HTN_heuristic"]:
-            if richness:
-                # self.phenotype = 'treatment resistant hypertension, defined as a high blood pressure measurements while prescribed 3 or more hypertension medications or requiring prescription of 4 or more hypertentsion medications'
-                self.phenotype = "treatment resistant hypertension, which we will define as 2 or more high blood pressure measurements while prescribed 3 hypertension medications or 2 or more encounters while prescribed 4 or more hypertension medications"
-            else:
-                self.phenotype = "treatment resistant hypertension"
-        elif target in ["htn_hypok_dx_ia", "hypoK_heuristic_v4"]:
-            if richness:
-                # self.phenotype = 'hypertension with hypokalemia, defined as the cooccurrence of high blood pressure, which can be intuited based on high blood pressure measurements, number of encounters with high blood pressure measurements, hypertension Dx codes, and/or counts in clinical notes, and low potassium, which can be defined as either 2 or more low potassium test results, 2 or more potassium supplementation prescriptions, or 2 or more hypokalemia diagnosis code'
-                self.phenotype = "hypertension with hypokalemia, which we will define as 2 or more hypertension Dx codes and either 2 or more low potassium test results, 2 or more potassium supplementation prescriptions, or 2 or more hypokalemia diagnosis codes"
-            else:
-                self.phenotype = "hypertension with hypokalemia"
-        else:
-            raise Exception("Unknown target")
-
-        print("set phenotype prompt description to: ", self.phenotype)
-
-        pass
+        self.phenotype = cfg['phenotype_description'](target, richness)
 
     def set_file(self, filename):
         # Because fold doesnt matter, we have the option to save or load previous programs (avoid excessive openAPI calls).

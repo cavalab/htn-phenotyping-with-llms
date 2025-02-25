@@ -4,10 +4,10 @@ matplotlib
 numpy
 scikit-learn
 tqdm
-importlib
 statannotations
 statsmodels
 fire
-dotenv
 openai
 tableone
+python-dotenv
+scypy==1.11.4

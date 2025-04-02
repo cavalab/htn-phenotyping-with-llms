@@ -16,13 +16,13 @@ sns.set_context("paper", font_scale=1.25, rc={"lines.linewidth": 1.1})
 
 results_path_not_llms = "../results_not-llms"
 
-if True:
+if False:
     # Original experiments
     results_path = "../results_paper"
     paper_dir = "../paper"
 else:
     # improved experiments with updated feature prompts
-    results_path = "../results_paper_rebuttal"
+    results_path_llms = "../results_paper_rebuttal"
     paper_dir = "../paper_rebuttal"
 
 if not os.path.exists(paper_dir):

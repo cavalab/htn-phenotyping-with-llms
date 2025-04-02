@@ -15,7 +15,7 @@ sns.set_style("ticks", {"legend.frameon": True})  # style='whitegrid', palette='
 sns.set_context("paper", font_scale=1.25, rc={"lines.linewidth": 1.1})
 
 data_dir = '../data'
-if True:
+if False:
     # Original experiments
     results_path = "../results_paper"
     paper_dir = "../paper"

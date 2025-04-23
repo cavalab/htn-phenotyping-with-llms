@@ -1,3 +1,37 @@
+def set_phenotype_description(target="", richness=False):
+    if target in ["htn_dx_ia", "HTN_heuristic"]:
+        if richness:
+            phenotype = "hypertension, which we will define as 2 or more hypertension Dx codes"
+        else:
+            phenotype = "hypertension"
+
+    elif target in ["res_htn_dx_ia", "res_HTN_heuristic"]:
+        if richness:
+            phenotype = (
+                "treatment resistant hypertension, which we will define as 2 "
+                "or more high blood pressure measurements while prescribed 3 "
+                "hypertension medications or 2 or more encounters while "
+                "prescribed 4 or more hypertension medications")
+        else:
+            phenotype = "treatment resistant hypertension"
+
+    elif target in ["htn_hypok_dx_ia", "hypoK_heuristic_v4"]:
+        if richness:
+            phenotype = (
+                "hypertension with hypokalemia, which we will define as 2 or "
+                "more hypertension Dx codes and either 2 or more low potassium "
+                "test results, 2 or more potassium supplementation "
+                "prescriptions, or 2 or more hypokalemia diagnosis codes")
+        else:
+            phenotype = "hypertension with hypokalemia"
+
+    else:
+        raise Exception("Unknown target")
+
+    print("set phenotype prompt description to: ", phenotype)
+
+    return phenotype
+    
 def set_init_messages(phenotype, func_return, X_variable_dict):
     return [
         {
@@ -23,16 +57,16 @@ def set_init_messages(phenotype, func_return, X_variable_dict):
         },
     ]
 
-
 cfg = dict(
     temperature=0.5,
     top_p=1.0,
     max_tokens=4096,
     init_messages=set_init_messages,
+    phenotype_description=set_phenotype_description,
     func_return="floats representing the probability, between 0 and 1,",
 )
-import numpy as np
 
+import numpy as np
 
 def default_cp_function(df):
     return np.zeros(len(df))

@@ -184,6 +184,7 @@ def read_data(
             "high_BP_during_htn_meds_2",
             "high_BP_during_htn_meds_3",
             "high_BP_during_htn_meds_4_plus",
+            "sum_enc_during_htn_meds_4_plus",
             "low_K_N",
             "test_K_N",
             "Med_Potassium_N",
@@ -195,14 +196,16 @@ def read_data(
         X_test = X_test[htn_variables]
 
     if scale:
+        columns = X_train.columns
+
         # scl = StandardScaler().fit(X_train)
         scl = MinMaxScaler().fit(X_train)
 
         X_train = scl.transform(X_train.values)
         X_test = scl.transform(X_test.values)
 
-        X_train = pd.DataFrame(X_train, columns=df_X.columns)
-        X_test = pd.DataFrame(X_test, columns=df_X.columns)
+        X_train = pd.DataFrame(X_train, columns=columns)
+        X_test = pd.DataFrame(X_test, columns=columns)
 
     # X_train.dtypes.to_csv(f'{target}_dtypes.csv')
 
@@ -243,6 +246,8 @@ def evaluate_model(
 
     if "GPT" in name:
         estimator.set_prompt(target=target, richness=prompt_richness)
+        if "35_iterative" in name:
+            estimator.max_tokens = 1000
 
         # To avoid loading previously generated models, save the file name with
         # the fold, and dont use the t_group (use the actual target instead), so
@@ -278,11 +283,12 @@ def evaluate_model(
                     [
                         target,  # use 't_group' to recycle dx/htn models. Otherwise use 'target'
                         name,
-                        # str(repeat),
-                        str(random_state),
-                        (str(fold) if "iterative" in name else ""), # for the iter versions the folds are important, they depend on the data
+                        str(scale),
                         str(few_feature),
                         str(prompt_richness),
+                        str(repeat),
+                        str(fold) if "iterative" in name else "",
+                        str(random_state),
                         "program",
                     ]
                 )
@@ -341,7 +347,7 @@ def evaluate_model(
         # older versions of feat (i.e. the git checkout in setup)
         # size = estimator.stats_['med_size'][-1]
         # complexity = estimator.stats_['med_complexity'][-1]
-
+    else:
         filename = (
             rdir
             + "/"
@@ -349,17 +355,18 @@ def evaluate_model(
                 [
                     targets[target],
                     name,
-                    str(repeat),
-                    str(random_state),
-                    str(fold),
                     str(scale),
                     str(few_feature),
                     str(prompt_richness),
+                    str(repeat),
+                    str(random_state),
+                    str(fold),
                     ".pkl",
                 ]
             )
         )
 
+        model = model_fmt = 0
         if "GPT" not in name:
             pickle.dump(estimator, open(filename, "wb"))
 
@@ -448,12 +455,12 @@ def evaluate_model(
             [
                 targets[target],
                 name,
-                str(repeat),
-                str(random_state),
-                str(fold),
                 str(scale),
                 str(few_feature),
                 str(prompt_richness),
+                str(repeat),
+                str(fold),
+                str(random_state),
             ]
         )
     )

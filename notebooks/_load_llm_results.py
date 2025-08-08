@@ -19,16 +19,16 @@ if False:
     # Original experiments
     results_path = "../results_paper"
     paper_dir = "../paper"
+    poster_dir = "../poster"
 else:
     # improved experiments with updated feature prompts
     results_path = "../results_paper_rebuttal"
     paper_dir = "../paper_rebuttal"
+    poster_dir = "../poster_rebuttal"
 
-if not os.path.exists(paper_dir):
-    os.makedirs(paper_dir)
-
-if not os.path.exists(f"{paper_dir}/final_models"):
-    os.makedirs(f"{paper_dir}/final_models")
+for p in [paper_dir, poster_dir, f"{paper_dir}/final_models"]:
+    if not os.path.exists(p):
+        os.makedirs(p)
 
 targets = {
     "htn_dx_ia": "Htndx",
@@ -124,52 +124,3 @@ marker_choice = {
 # Use models generated with or without scaled data
 
 results = []
-# for tk, tv in targets.items():
-#     for model in models:
-#         for fold in folds:
-#             for scaled_data in [False]:
-#                 for icd_only in [True, False]:
-#                     for prompt_richness in [True, False]:
-#                         for file in glob(
-#                             f"{results_path}/{tk}/{model}/"
-#                             f"{tv}_{model}_{scaled_data}_{icd_only}_{prompt_richness}*.json"
-#                         ):
-#                             # skipping llm results --> they dont have the ALL fold
-#                             df = pd.read_json(file, typ="series")
-
-#                             indxs = df.index
-#                             # indxs = [indx for indx in indxs if indx not in ['pred', 'pred_proba']]
-
-#                             results.append(df[indxs])
-
-# from tqdm import tqdm
-
-
-# def load_results(constraints=dict(scale=[False])):
-#     for file in tqdm(glob(f"{results_path}/**/*.json", recursive=True)):
-#         df = pd.read_json(file, typ="series")
-#         stay = True
-#         for kc, vc in constraints.items():
-#             if df[kc] not in vc:
-#                 stay = False
-#                 print("skipping", file)
-#                 break
-#         if not stay:
-#             continue
-
-#         indxs = df.index
-#         # indxs = [indx for indx in indxs if indx not in ['pred', 'pred_proba']]
-
-#         results.append(df[indxs])
-
-#     results_df = pd.DataFrame(data=results, columns=indxs)
-
-#     # Beautifying it
-#     results_df["model"] = results_df["model"].apply(lambda m: nice_model_labels[m])
-#     results_df["target"] = results_df["target"].apply(lambda t: dnames_to_nice[t])
-
-#     results_df = results_df[results_df["model"].isin(order)]
-
-#     print(results_df["model"].unique())
-#     print(results_df["target"].unique())
-#     return results_df

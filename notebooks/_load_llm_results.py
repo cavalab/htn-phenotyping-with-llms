@@ -15,16 +15,9 @@ sns.set_style("ticks", {"legend.frameon": True})  # style='whitegrid', palette='
 sns.set_context("paper", font_scale=1.25, rc={"lines.linewidth": 1.1})
 
 data_dir = '../data'
-if False:
-    # Original experiments
-    results_path = "../results_paper"
-    paper_dir = "../paper"
-    poster_dir = "../poster"
-else:
-    # improved experiments with updated feature prompts
-    results_path = "../results_paper_rebuttal"
-    paper_dir = "../paper_rebuttal"
-    poster_dir = "../poster_rebuttal"
+results_path = "../results"
+paper_dir = "../paper"
+poster_dir = "../poster"
 
 for p in [paper_dir, poster_dir, f"{paper_dir}/final_models"]:
     if not os.path.exists(p):

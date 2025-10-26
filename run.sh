@@ -3,7 +3,7 @@
 # conda activate htn-cp-llm
 
 queue="bch-compute" # your slurm queue name, if applicable. to run locally --- instead of using slurm --- just use the --local flag
-rdir="results_paper_rebuttal"
+rdir="results"
 
 # Switch the `if false` clausules to run the experiments
 
